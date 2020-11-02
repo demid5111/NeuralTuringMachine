@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 import numpy as np
 from generate_data import CopyTaskData, AssociativeRecallData
@@ -56,6 +57,7 @@ if args.mann == 'ntm':
 
 if args.verbose:
     import pickle
+    os.makedirs('head_logs', exist_ok=True)
     HEAD_LOG_FILE = 'head_logs/{0}.p'.format(args.experiment_name)
     GENERALIZATION_HEAD_LOG_FILE = 'head_logs/generalization_{0}.p'.format(args.experiment_name)
 
