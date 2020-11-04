@@ -132,8 +132,10 @@ if __name__ == '__main__':
 
     if args.mann == 'ntm':
         if args.use_local_impl:
+            print('Using local implementation')
             from ntm import NTMCell
         else:
+            print('Using contrib implementation')
             from tensorflow.contrib.rnn.python.ops.rnn_cell import NTMCell
 
     if args.verbose:
@@ -273,8 +275,6 @@ if __name__ == '__main__':
                                                                                 curriculum_point,
                                                                                 curriculum_point_error,
                                                                                 curriculum_point_loss))
-
-        print(f'Finished with {i}')
 
     if convergence_on_multi_task is None:
         performance_on_multi_task = multi_task_error
