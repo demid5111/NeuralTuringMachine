@@ -55,7 +55,18 @@ def eval_performance(sess, data_generator, args, model, target_point, labels, ou
         pad_to_max_seq_len=args.pad_to_max_seq_len
     )
 
-    target_task_loss, target_task_error = run_eval(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs, batches, store_heat_maps=store_heat_maps)
+    target_task_loss, target_task_error = run_eval(sess, model,
+                                                   inputs_placeholder,
+                                                   outputs_placeholder,
+                                                   max_seq_len_placeholder,
+                                                   data_generator,
+                                                   args,
+                                                   target_point,
+                                                   labels,
+                                                   outputs,
+                                                   inputs,
+                                                   batches,
+                                                   store_heat_maps=store_heat_maps)
 
     # multi-task
 

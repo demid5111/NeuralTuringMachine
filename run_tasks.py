@@ -12,6 +12,7 @@ from evaluate import run_eval, eval_performance, eval_generalization
 import constants
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,8 @@ def create_argparser():
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--eval_batch_size', type=int, default=640)
 
-    parser.add_argument('--curriculum', type=str, default='none', help='none | uniform | naive | look_back | look_back_and_forward | prediction_gain')
+    parser.add_argument('--curriculum', type=str, default='none',
+                        help='none | uniform | naive | look_back | look_back_and_forward | prediction_gain')
     parser.add_argument('--pad_to_max_seq_len', type=str2bool, default=False)
 
     parser.add_argument('--task', type=str, default='copy', help='copy | associative_recall')
@@ -51,8 +53,10 @@ def create_argparser():
     parser.add_argument('--experiment_name', type=str, required=True)
     parser.add_argument('--job-dir', type=str, required=False)
     parser.add_argument('--steps_per_eval', type=int, default=200)
-    parser.add_argument('--use_local_impl', type=str2bool, default=True, help='whether to use the repos local NTM implementation or the TF contrib version')
+    parser.add_argument('--use_local_impl', type=str2bool, default=True,
+                        help='whether to use the repos local NTM implementation or the TF contrib version')
     return parser
+
 
 class BuildModel(object):
     def __init__(self, max_seq_len, inputs):
@@ -73,14 +77,24 @@ class BuildModel(object):
             initial_state = tuple(tf.contrib.rnn.LSTMStateTuple(
                 c=expand(tf.tanh(learned_init(args.num_units)), dim=0, N=args.batch_size),
                 h=expand(tf.tanh(learned_init(args.num_units)), dim=0, N=args.batch_size))
-                for _ in range(args.num_layers))
+                                  for _ in range(args.num_layers))
 
         elif args.mann == 'ntm':
             if args.use_local_impl:
-                cell = NTMCell(args.num_layers, args.num_units, args.num_memory_locations, args.memory_size,
-                    args.num_read_heads, args.num_write_heads, addressing_mode='content_and_location',
-                    shift_range=args.conv_shift_range, reuse=False, output_dim=args.num_bits_per_vector,
-                    clip_value=args.clip_value, init_mode=args.init_mode)
+                cell = NTMCell(
+                    controller_layers=args.num_layers,
+                    controller_units=args.num_units,
+                    memory_size=args.num_memory_locations,
+                    memory_vector_dim=args.memory_size,
+                    read_head_num=args.num_read_heads,
+                    write_head_num=args.num_write_heads,
+                    addressing_mode='content_and_location',
+                    shift_range=args.conv_shift_range,
+                    reuse=False,
+                    output_dim=args.num_bits_per_vector,
+                    clip_value=args.clip_value,
+                    init_mode=args.init_mode
+                )
             else:
                 def single_cell(num_units):
                     return tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1.0)
@@ -89,9 +103,9 @@ class BuildModel(object):
                     [single_cell(args.num_units) for _ in range(args.num_layers)])
 
                 cell = NTMCell(controller, args.num_memory_locations, args.memory_size,
-                    args.num_read_heads, args.num_write_heads, shift_range=args.conv_shift_range,
-                    output_dim=args.num_bits_per_vector,
-                    clip_value=args.clip_value)
+                               args.num_read_heads, args.num_write_heads, shift_range=args.conv_shift_range,
+                               output_dim=args.num_bits_per_vector,
+                               clip_value=args.clip_value)
 
         output_sequence, _ = tf.nn.dynamic_rnn(
             cell=cell,
@@ -101,9 +115,9 @@ class BuildModel(object):
             initial_state=initial_state if args.mann == 'none' else None)
 
         if args.task == 'copy':
-            self.output_logits = output_sequence[:, self.max_seq_len+1:, :]
+            self.output_logits = output_sequence[:, self.max_seq_len + 1:, :]
         elif args.task == 'associative_recall':
-            self.output_logits = output_sequence[:, 3*(self.max_seq_len+1)+2:, :]
+            self.output_logits = output_sequence[:, 3 * (self.max_seq_len + 1) + 2:, :]
 
         if args.task in ('copy', 'associative_recall'):
             self.outputs = tf.sigmoid(self.output_logits)
@@ -115,7 +129,7 @@ class BuildTModel(BuildModel):
 
         if args.task in ('copy', 'associative_recall'):
             cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=outputs, logits=self.output_logits)
-            self.loss = tf.reduce_sum(cross_entropy)/args.batch_size
+            self.loss = tf.reduce_sum(cross_entropy) / args.batch_size
 
         if args.optimizer == 'RMSProp':
             optimizer = tf.train.RMSPropOptimizer(args.learning_rate, momentum=0.9, decay=0.9)
@@ -136,6 +150,7 @@ if __name__ == '__main__':
             from ntm import NTMCell
         else:
             print('Using contrib implementation')
+            import tensorflow.contrib.rnn.python.ops.rnn_cell as tf_nn
             from tensorflow.contrib.rnn.python.ops.rnn_cell import NTMCell
 
     if args.verbose:
@@ -201,8 +216,8 @@ if __name__ == '__main__':
                 task = 2 + exp3s.draw_task()
 
         seq_len, inputs, labels = data_generator.generate_batches(
-            1,
-            args.batch_size,
+            num_batches=1,
+            batch_size=args.batch_size,
             bits_per_vector=args.num_bits_per_vector,
             curriculum_point=curriculum_point if args.curriculum != 'prediction_gain' else task,
             max_seq_len=args.max_seq_len,
@@ -218,7 +233,8 @@ if __name__ == '__main__':
                                           })
 
         if args.curriculum == 'prediction_gain':
-            loss, _ = run_eval(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs, [(seq_len, inputs, labels)])
+            loss, _ = run_eval(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder,
+                               data_generator, args, target_point, labels, outputs, inputs, [(seq_len, inputs, labels)])
             v = train_loss - loss
             exp3s.update_w(v, seq_len)
 
@@ -231,6 +247,7 @@ if __name__ == '__main__':
             logger.info('TRAIN_PARSABLE: {0},{1},{2},{3}'.format(i, curriculum_point, train_loss, avg_errors_per_seq))
 
         if i % args.steps_per_eval == 0:
+            print('In validation')
             target_task_error, target_task_loss, multi_task_error, multi_task_loss, curriculum_point_error, \
             curriculum_point_loss = eval_performance(sess, data_generator, args, model,
                                                      target_point, labels, outputs, inputs,
@@ -248,7 +265,10 @@ if __name__ == '__main__':
             if convergence_on_multi_task is not None and (
                     performance_on_multi_task is None or multi_task_error < performance_on_multi_task):
                 performance_on_multi_task = multi_task_error
-                generalization_from_multi_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs )
+                generalization_from_multi_task = eval_generalization(sess, model, inputs_placeholder,
+                                                                     outputs_placeholder, max_seq_len_placeholder,
+                                                                     data_generator, args, target_point, labels,
+                                                                     outputs, inputs)
                 gen_evaled = True
 
             if convergence_on_target_task is not None and (
@@ -257,8 +277,13 @@ if __name__ == '__main__':
                 if gen_evaled:
                     generalization_from_target_task = generalization_from_multi_task
                 else:
-                    generalization_from_target_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs )
+                    generalization_from_target_task = eval_generalization(sess, model, inputs_placeholder,
+                                                                          outputs_placeholder, max_seq_len_placeholder,
+                                                                          data_generator, args, target_point, labels,
+                                                                          outputs, inputs)
 
+            print(curriculum_point_error)
+            print(progress_error)
             if curriculum_point_error < progress_error:
                 if args.task == 'copy':
                     curriculum_point = min(target_point, 2 * curriculum_point)
@@ -277,12 +302,18 @@ if __name__ == '__main__':
                                                                                 curriculum_point_loss))
 
     if convergence_on_multi_task is None:
+        print('In convergence_on_multi_task')
         performance_on_multi_task = multi_task_error
-        generalization_from_multi_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs )
+        generalization_from_multi_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder,
+                                                             max_seq_len_placeholder, data_generator, args,
+                                                             target_point, labels, outputs, inputs)
 
     if convergence_on_target_task is None:
+        print('In convergence_on_target_task')
         performance_on_target_task = target_task_error
-        generalization_from_target_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder, max_seq_len_placeholder, data_generator, args, target_point, labels, outputs, inputs )
+        generalization_from_target_task = eval_generalization(sess, model, inputs_placeholder, outputs_placeholder,
+                                                              max_seq_len_placeholder, data_generator, args,
+                                                              target_point, labels, outputs, inputs)
 
     logger.info('----SUMMARY----')
     logger.info('convergence_on_target_task: {0}'.format(convergence_on_target_task))
@@ -298,3 +329,5 @@ if __name__ == '__main__':
     logger.info('generalization_from_multi_task: {0}'.format(
         ','.join(map(str, generalization_from_multi_task)) if generalization_from_multi_task is not None else None))
 
+
+    print('Trained the model!')
