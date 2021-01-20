@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 from scipy import spatial
 import random
@@ -63,21 +65,14 @@ class SumTaskData:
         for i in range(num_batches):
             if curriculum == 'none':
                 seq_len = max_seq_len
+            else:
+                sys.exit(f'Current "{curriculum}" curriculum is not supported by sum task')
 
             pad_to_len = max_seq_len if pad_to_max_seq_len else seq_len
 
-            def generate_sequence():
-                first_part = [snap_boolean(np.append(np.random.rand(bits_per_vector), 0)) for _ in range(seq_len)]
-                second_part = [np.zeros(bits_per_vector + 1) for _ in range(pad_to_len - seq_len)]
-                return np.asarray(first_part + second_part)
+            full_inputs, full_outputs = self._generate_single_batch(batch_size, bits_per_vector)
 
-            inputs = self._generate_single_batch(batch_size, bits_per_vector)
-            eos = np.ones([batch_size, 1, bits_per_vector + 1])
-            output_inputs = np.zeros_like(inputs)
-
-            full_inputs = np.concatenate((inputs, eos, output_inputs), axis=1)
-
-            batches.append((pad_to_len, full_inputs, inputs[:, :, :bits_per_vector]))
+            batches.append((pad_to_len, full_inputs, full_outputs[:, (2 * bits_per_vector + 2):(3 * bits_per_vector + 3)]))
         return batches
 
     def error_per_seq(self, labels, outputs, num_seq):
