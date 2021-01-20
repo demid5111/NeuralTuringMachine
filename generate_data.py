@@ -53,6 +53,116 @@ class CopyTaskData:
         return bit_errors / num_seq
 
 
+class SumTaskData:
+    def __init__(self):
+        self.end_marker = True
+
+    def generate_batches(self, num_batches, batch_size, bits_per_vector=8, curriculum_point=20, max_seq_len=20,
+                         curriculum='uniform', pad_to_max_seq_len=False):
+        batches = []
+        for i in range(num_batches):
+            if curriculum == 'none':
+                seq_len = max_seq_len
+
+            pad_to_len = max_seq_len if pad_to_max_seq_len else seq_len
+
+            def generate_sequence():
+                first_part = [snap_boolean(np.append(np.random.rand(bits_per_vector), 0)) for _ in range(seq_len)]
+                second_part = [np.zeros(bits_per_vector + 1) for _ in range(pad_to_len - seq_len)]
+                return np.asarray(first_part + second_part)
+
+            inputs = self._generate_single_batch(batch_size, bits_per_vector)
+            eos = np.ones([batch_size, 1, bits_per_vector + 1])
+            output_inputs = np.zeros_like(inputs)
+
+            full_inputs = np.concatenate((inputs, eos, output_inputs), axis=1)
+
+            batches.append((pad_to_len, full_inputs, inputs[:, :, :bits_per_vector]))
+        return batches
+
+    def error_per_seq(self, labels, outputs, num_seq):
+        outputs[outputs >= 0.5] = 1.0
+        outputs[outputs < 0.5] = 0.0
+        bit_errors = np.sum(np.abs(labels - outputs))
+        return bit_errors / num_seq
+
+    def _generate_single_batch(self, batch_size, bits_per_vector):
+        num1 = np.random.binomial(1, 0.5, (batch_size, bits_per_vector))
+        num2 = np.random.binomial(1, 0.5, (batch_size, bits_per_vector))
+
+        # overriding
+        # num1 = np.full((batch_size, bits_per_vector), 1)
+        # num2 = np.full((batch_size, bits_per_vector), 1)
+
+        example_input = np.zeros((batch_size, 3 * bits_per_vector + 3 + self.end_marker, 3), dtype=np.float32)
+        example_output = np.zeros((batch_size, 3 * bits_per_vector + 3 + self.end_marker, 3), dtype=np.float32)
+        sum_array = np.zeros((batch_size, bits_per_vector + 1), dtype=np.float32)
+        for i in range(batch_size):
+            sum_array[i] = SumTaskData.sum_binary_numpy(num1[i], num2[i])
+
+        SumTaskData.log_generated_sample(num1[0], num2[0], sum_array[0])
+
+        # overriding
+        # sum_array = np.full((batch_size, bits_per_vector + 1), 15)
+
+        example_input[:, :bits_per_vector, 0] = num1
+        example_input[:, bits_per_vector, 1] = 1
+        example_input[:, (bits_per_vector + 1):(2 * bits_per_vector + 1), 0] = num2
+        example_input[:, (2 * bits_per_vector + 1), 2] = 1
+        example_output[:, (2 * bits_per_vector + 2):(3 * bits_per_vector + 3), 0] = sum_array
+        if self.end_marker:
+            example_output[:, (3 * bits_per_vector + 3), 2] = 1
+
+        return example_input, example_output
+
+    @staticmethod
+    def _from_decimal_to_little_endian_binary(decimal_number: int):
+        return bin(decimal_number)[2:][::-1]
+
+    @staticmethod
+    def _from_decimal_to_little_endian_binary_numpy(decimal_number: int, bits_per_number):
+        bin_str = SumTaskData._from_decimal_to_little_endian_binary(decimal_number)
+        bin_array = np.array([int(i) for i in list(bin_str)], dtype=np.float32)
+        res_array = np.zeros((bits_per_number,))
+        res_array[:len(bin_array)] = bin_array
+        return res_array
+
+    @staticmethod
+    def _from_little_endian_binary_to_decimal(binary_number: str):
+        return int(binary_number[::-1], 2)
+
+    @staticmethod
+    def _from_binary_numpy_to_decimal(binary_number: np.ndarray) -> int:
+        bin_str = SumTaskData._from_binary_numpy_to_binary_str(binary_number)
+        return SumTaskData._from_little_endian_binary_to_decimal(bin_str)
+
+    @staticmethod
+    def _from_binary_numpy_to_binary_str(binary_number: np.ndarray) -> str:
+        return ''.join([str(int(i)) for i in binary_number.tolist()])
+
+    @staticmethod
+    def log_generated_sample(a, b, sum_res):
+        dec_a = SumTaskData._from_binary_numpy_to_decimal(a)
+        dec_b = SumTaskData._from_binary_numpy_to_decimal(b)
+        dec_sum = SumTaskData._from_binary_numpy_to_decimal(sum_res)
+
+        bin_a = SumTaskData._from_binary_numpy_to_binary_str(a)
+        bin_b = SumTaskData._from_binary_numpy_to_binary_str(b)
+        bin_sum = SumTaskData._from_binary_numpy_to_binary_str(sum_res)
+        print(f'Generated sample (binary version): {bin_a}+{bin_b}={bin_sum}')
+        print(f'Generated sample (decimal version): {dec_a}+{dec_b}={dec_sum}')
+        assert dec_a + dec_b == dec_sum, 'Binary arithmetic is broken'
+
+    @staticmethod
+    def sum_binary_numpy(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        dec_a = SumTaskData._from_binary_numpy_to_decimal(a)
+        dec_b = SumTaskData._from_binary_numpy_to_decimal(b)
+        sum_array = SumTaskData._from_decimal_to_little_endian_binary_numpy(dec_a + dec_b, bits_per_number=len(a) + 1)
+
+        SumTaskData.log_generated_sample(a, b, sum_array)
+        return sum_array
+
+
 class RepeatCopyTaskData:
     def __init__(self, max_seq_len, max_repeats):
         self.max_seq_len = max_seq_len
