@@ -110,7 +110,8 @@ class SumTaskData:
         SumTaskData.log_generated_sample(num1[0], num2[0], sum_array[0])
 
         example_input[:, :bits_per_number, 0] = num1
-        example_input[:, bits_per_number, 1] = 1  # end of the first number
+        example_input[:, bits_per_number, 1] = 1  # binary operation encoding (0 1 0) in the
+        # original paper
 
         example_input[:, (bits_per_number + 1):(2 * bits_per_number + 1), 0] = num2
         example_input[:, (2 * bits_per_number + 1), 2] = 1  # end of the second number
