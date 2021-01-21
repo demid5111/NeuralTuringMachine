@@ -56,12 +56,9 @@ class CopyTaskData:
 
 
 class SumTaskData:
-    def __init__(self, bits_per_number):
-        self.end_marker = True
-        self.bits_per_number = bits_per_number
-
-    def generate_batches(self, num_batches, batch_size, bits_per_vector=3, curriculum_point=20, max_seq_len=20,
+    def generate_batches(self, num_batches, batch_size, bits_per_vector=3, curriculum_point=20, max_seq_len=4,
                          curriculum='uniform', pad_to_max_seq_len=False):
+        bits_per_number = max_seq_len
         batches = []
         for i in range(num_batches):
             if curriculum != 'none':
@@ -70,18 +67,21 @@ class SumTaskData:
             bits_per_vector_for_inputs = bits_per_vector + 1
             bits_per_vector_for_outputs = bits_per_vector
 
-            inputs, outputs = self._generate_single_batch(batch_size,
-                                                          bits_per_vector_for_inputs,
-                                                          bits_per_vector_for_outputs)
+            inputs, outputs = self._generate_batches(batch_size,
+                                                     bits_per_number,
+                                                     bits_per_vector_for_inputs,
+                                                     bits_per_vector_for_outputs)
 
+            # TODO: should it be a full row of ones as it is in other tasks? Or as in
+            # binary arithmetic paper - just a flag?
             eos = np.ones([batch_size, 1, bits_per_vector_for_inputs])
-            output_inputs = np.zeros((batch_size, self.bits_per_number + 1, bits_per_vector_for_inputs))
+            output_inputs = np.zeros((batch_size, bits_per_number + 1, bits_per_vector_for_inputs))
 
             full_inputs = np.concatenate((inputs[:, :-1, :], eos, output_inputs), axis=1)
 
             batches.append(
                 (
-                    self.get_seq_len(),
+                    bits_per_number,
                     full_inputs,
                     outputs
                 )
@@ -94,45 +94,38 @@ class SumTaskData:
         bit_errors = np.sum(np.abs(labels - outputs))
         return bit_errors / num_seq
 
-    def _generate_single_batch(self, batch_size, bits_per_vector_for_inputs, bits_per_vector_for_outputs):
-        num1 = np.random.binomial(1, 0.5, (batch_size, self.bits_per_number))
-        num2 = np.random.binomial(1, 0.5, (batch_size, self.bits_per_number))
+    def _generate_batches(self, batch_size, bits_per_number, bits_per_vector_for_inputs,
+                          bits_per_vector_for_outputs):
+        num1 = np.random.binomial(1, 0.5, (batch_size, bits_per_number))
+        num2 = np.random.binomial(1, 0.5, (batch_size, bits_per_number))
 
         # + 1 is required to satisfy needs of the NTM architecture implementation
         # in this library
-        example_input = self.new_empty_placeholder(batch_size, bits_per_vector_for_inputs)
+        example_input = self.new_empty_placeholder(batch_size, bits_per_number, bits_per_vector_for_inputs)
 
-        # example_output = self.new_empty_placeholder(batch_size, bits_per_vector_for_outputs)
-
-        sum_array = np.zeros((batch_size, self.bits_per_number + 1), dtype=np.float32)
+        sum_array = np.zeros((batch_size, bits_per_number + 1), dtype=np.float32)
         for i in range(batch_size):
             sum_array[i] = SumTaskData.sum_binary_numpy(num1[i], num2[i])
 
         SumTaskData.log_generated_sample(num1[0], num2[0], sum_array[0])
 
-        example_input[:, :self.bits_per_number, 0] = num1
-        example_input[:, self.bits_per_number, 1] = 1  # end of the first number
+        example_input[:, :bits_per_number, 0] = num1
+        example_input[:, bits_per_number, 1] = 1  # end of the first number
 
-        example_input[:, (self.bits_per_number + 1):(2 * self.bits_per_number + 1), 0] = num2
-        example_input[:, (2 * self.bits_per_number + 1), 2] = 1  # end of the second number
+        example_input[:, (bits_per_number + 1):(2 * bits_per_number + 1), 0] = num2
+        example_input[:, (2 * bits_per_number + 1), 2] = 1  # end of the second number
 
-        example_output = np.zeros((batch_size, self.bits_per_number + 1, bits_per_vector_for_outputs))
+        example_output = np.zeros((batch_size, bits_per_number + 1, bits_per_vector_for_outputs))
 
         example_output[:, :, 0] = sum_array
-        # if self.end_marker:
-        #     # TODO: should it be a full row of ones as it is in other tasks?
-        #     example_output[:, (3 * self.bits_per_number + 3), 2] = 1  # end of the resulting sum
 
         return example_input, example_output
 
-    def get_seq_len(self):
-        return 2 * self.bits_per_number + 2
-
-    def new_empty_placeholder(self, batch_size, bits_per_vector):
+    def new_empty_placeholder(self, batch_size, bits_per_number, bits_per_vector):
         return np.zeros(
             (
                 batch_size,
-                self.get_seq_len(),
+                2 * bits_per_number + 2,
                 bits_per_vector
             ), dtype=np.float32)
 
