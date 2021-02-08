@@ -156,7 +156,7 @@ class SumTaskData:
         return ''.join([str(int(i)) for i in binary_number.tolist()])
 
     @staticmethod
-    def log_generated_sample(a, b, sum_res):
+    def log_generated_sample(a, b, sum_res, is_verbose=False):
         dec_a = SumTaskData._from_binary_numpy_to_decimal(a)
         dec_b = SumTaskData._from_binary_numpy_to_decimal(b)
         dec_sum = SumTaskData._from_binary_numpy_to_decimal(sum_res)
@@ -164,8 +164,9 @@ class SumTaskData:
         bin_a = SumTaskData._from_binary_numpy_to_binary_str(a)
         bin_b = SumTaskData._from_binary_numpy_to_binary_str(b)
         bin_sum = SumTaskData._from_binary_numpy_to_binary_str(sum_res)
-        print(f'Generated sample (binary version): {bin_a}+{bin_b}={bin_sum}')
-        print(f'Generated sample (decimal version): {dec_a}+{dec_b}={dec_sum}')
+        if is_verbose:
+            print(f'Generated sample (binary version): {bin_a}+{bin_b}={bin_sum}')
+            print(f'Generated sample (decimal version): {dec_a}+{dec_b}={dec_sum}')
         assert dec_a + dec_b == dec_sum, 'Binary arithmetic is broken'
 
     @staticmethod
