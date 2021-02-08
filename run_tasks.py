@@ -252,7 +252,8 @@ if __name__ == '__main__':
     elif args.task == SumTask.name:
         data_generator = SumTaskData()
         target_point = args.max_seq_len
-        curriculum_point = 1 #2 if args.curriculum not in ('prediction_gain', 'none') else target_point
+        # TODO: investigate what curriculum point is
+        curriculum_point = None  # 1 if args.curriculum not in ('prediction_gain', 'none') else target_point
         progress_error = 1.0
         convergence_error = 0.1
 
@@ -312,9 +313,12 @@ if __name__ == '__main__':
                                                      target_point, labels, outputs, inputs,
                                                      inputs_placeholder, outputs_placeholder, max_seq_len_placeholder,
                                                      curriculum_point if args.curriculum != 'prediction_gain' else None,
-                                                     store_heat_maps=args.verbose)
+                                                     store_heat_maps=args.verbose,
+                                                     skip_multi_task=args.task == SumTask.name)
 
-            if convergence_on_multi_task is None and multi_task_error < convergence_error:
+            if (convergence_on_multi_task is None and
+                    multi_task_error is not None and  # condition inserted due to SumTask
+                    multi_task_error < convergence_error):
                 convergence_on_multi_task = i
 
             if convergence_on_target_task is None and target_task_error < convergence_error:
@@ -343,7 +347,8 @@ if __name__ == '__main__':
 
             print(curriculum_point_error)
             print(progress_error)
-            if curriculum_point_error < progress_error:
+            if (curriculum_point_error is not None and  # condition inserted due to SumTask
+                    curriculum_point_error < progress_error):
                 if args.task == CopyTask.name:
                     curriculum_point = min(target_point, 2 * curriculum_point)
                 elif args.task == AssociativeRecallTask.name:
@@ -390,3 +395,24 @@ if __name__ == '__main__':
 
 
     print('Trained the model!')
+    saver.save(sess, './models' + '/my_model.ckpt')
+
+
+    def analyze_inputs_outputs(graph):
+        ops = graph.get_operations()
+        outputs_set = set(ops)
+        inputs = []
+        for op in ops:
+            if len(op.inputs) == 0 and op.type != 'Const':
+                inputs.append(op)
+            else:
+                for input_tensor in op.inputs:
+                    if input_tensor.op in outputs_set:
+                        outputs_set.remove(input_tensor.op)
+        outputs = list(outputs_set)
+        return (inputs, outputs)
+
+    res = analyze_inputs_outputs(model.outputs.graph)
+    print(res)
+
+
