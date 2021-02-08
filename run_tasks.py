@@ -190,6 +190,20 @@ class BuildTModel(BuildModel):
         self.train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
 
+def analyze_inputs_outputs(graph):
+    ops = graph.get_operations()
+    outputs_set = set(ops)
+    inputs = []
+    for op in ops:
+        if len(op.inputs) == 0 and op.type != 'Const':
+            inputs.append(op)
+        else:
+            for input_tensor in op.inputs:
+                if input_tensor.op in outputs_set:
+                    outputs_set.remove(input_tensor.op)
+    return inputs, list(outputs_set)
+
+
 if __name__ == '__main__':
     args = create_argparser().parse_args()
 
@@ -262,7 +276,6 @@ if __name__ == '__main__':
 
     sess = tf.Session()
     sess.run(initializer)
-    saver = tf.train.Saver(max_to_keep=1)
 
     if args.verbose:
         pickle.dump({target_point: []}, open(constants.HEAD_LOG_FILE, "wb"))
@@ -393,26 +406,14 @@ if __name__ == '__main__':
     logger.info('generalization_from_multi_task: {0}'.format(
         ','.join(map(str, generalization_from_multi_task)) if generalization_from_multi_task is not None else None))
 
+    logger.info(f'Trained the model after {args.num_train_steps} steps.')
 
-    print('Trained the model!')
-    saver.save(sess, './models' + '/my_model.ckpt')
+    saver = tf.train.Saver(max_to_keep=1)
+    saver.save(sess, os.path.join('./models', 'my_model.ckpt'))
+    logger.info(f'Saved the trained model.')
 
-
-    def analyze_inputs_outputs(graph):
-        ops = graph.get_operations()
-        outputs_set = set(ops)
-        inputs = []
-        for op in ops:
-            if len(op.inputs) == 0 and op.type != 'Const':
-                inputs.append(op)
-            else:
-                for input_tensor in op.inputs:
-                    if input_tensor.op in outputs_set:
-                        outputs_set.remove(input_tensor.op)
-        outputs = list(outputs_set)
-        return (inputs, outputs)
-
-    res = analyze_inputs_outputs(model.outputs.graph)
-    print(res)
+    inputs, outputs = analyze_inputs_outputs(model.outputs.graph)
+    logger.info(f'Model inputs: {inputs}')
+    logger.info(f'Model outputs: {outputs}')
 
 
