@@ -367,6 +367,10 @@ if __name__ == '__main__':
                 elif args.task == AssociativeRecallTask.name:
                     curriculum_point = min(target_point, curriculum_point + 1)
 
+            saver = tf.train.Saver(max_to_keep=1)
+            saver.save(sess, os.path.join('./models', f'{i}', 'my_model.ckpt'))
+            logger.info(f'Saved the trained model at step {i}.')
+
             logger.info('----EVAL----')
             logger.info('target task error/loss: {0},{1}'.format(target_task_error, target_task_loss))
             logger.info('multi task error/loss: {0},{1}'.format(multi_task_error, multi_task_loss))
@@ -409,7 +413,7 @@ if __name__ == '__main__':
     logger.info(f'Trained the model after {args.num_train_steps} steps.')
 
     saver = tf.train.Saver(max_to_keep=1)
-    saver.save(sess, os.path.join('./models', 'my_model.ckpt'))
+    saver.save(sess, os.path.join('./models', f'final', 'my_model.ckpt'))
     logger.info(f'Saved the trained model.')
 
     inputs, outputs = analyze_inputs_outputs(model.outputs.graph)
