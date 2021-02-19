@@ -48,6 +48,11 @@ def create_argparser():
     parser.add_argument('--steps_per_eval', type=int, default=200)
     parser.add_argument('--use_local_impl', type=str2bool, default=True,
                         help='whether to use the repos local NTM implementation or the TF contrib version')
+
+    parser.add_argument('--continue_training_from_checkpoint', type=str, required=False,
+                        help='Optional. Specifies path to the directory with checkpoint')
+    parser.add_argument('--continue_training_from_train_step', type=int, default=0,
+                        help='Optional. Specifies train step from which we need to continue training')
     return parser
 
 
@@ -206,8 +211,6 @@ if __name__ == '__main__':
         model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
         initializer = tf.global_variables_initializer()
 
-    saver = tf.train.Saver(max_to_keep=1)
-
     # training
     convergence_on_target_task = None
     convergence_on_multi_task = None
@@ -254,14 +257,21 @@ if __name__ == '__main__':
     if data_generator is None:
         sys.exit(f'Data generation rules for "{args.task}" are not specified')
 
+    saver = tf.train.Saver(max_to_keep=1)
     sess = tf.Session()
-    sess.run(initializer)
+    if not args.continue_training_from_checkpoint:
+        sess.run(initializer)
+    else:
+        latest_checkpoint_path = tf.train.latest_checkpoint(args.continue_training_from_checkpoint)
+        print(f'Tensorflow reading {latest_checkpoint_path} checkpoint')
+        saver.restore(sess, latest_checkpoint_path)
+        print(f'Tensorflow loaded {latest_checkpoint_path} checkpoint')
 
     if args.verbose:
         pickle.dump({target_point: []}, open(constants.HEAD_LOG_FILE, "wb"))
         pickle.dump({}, open(constants.GENERALIZATION_HEAD_LOG_FILE, "wb"))
 
-    for i in range(args.num_train_steps):
+    for i in range(args.continue_training_from_train_step+1, args.num_train_steps):
         if args.curriculum == 'prediction_gain':
             if args.task == CopyTask.name:
                 task = 1 + exp3s.draw_task()

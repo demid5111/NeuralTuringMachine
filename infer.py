@@ -69,7 +69,6 @@ def test_model(directory_path: Path, bits_per_number):
 
 
 def demo_summator(directory_path: Path, a: int, b: int, bits_per_number):
-
     data_generator = SumTaskData()
     seq_len, inputs, labels = data_generator.generate_batches(
         num_batches=1,
