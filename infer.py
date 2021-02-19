@@ -49,14 +49,14 @@ def infer_model(directory_path: Path, inputs, seq_len):
     return outputs
 
 
-def test_model(directory_path: Path):
+def test_model(directory_path: Path, bits_per_number):
     data_generator = SumTaskData()
     seq_len, inputs, labels = data_generator.generate_batches(
         num_batches=1,
         batch_size=32,
         bits_per_vector=3,
         curriculum_point=None,
-        max_seq_len=4,
+        max_seq_len=bits_per_number,
         curriculum='none',
         pad_to_max_seq_len=False
     )[0]
@@ -68,8 +68,7 @@ def test_model(directory_path: Path):
     return error
 
 
-def demo_summator(directory_path: Path, a: int, b: int):
-    bits_per_number = 4
+def demo_summator(directory_path: Path, a: int, b: int, bits_per_number):
 
     data_generator = SumTaskData()
     seq_len, inputs, labels = data_generator.generate_batches(
@@ -100,9 +99,9 @@ if __name__ == '__main__':
 
     model = Path(args.frozen_model_filename)
 
-    overall_err = test_model(model.parent)
+    overall_err = test_model(model.parent, bits_per_number=4)
     print(f'Overall quality of model. Error: {overall_err}')
 
     a = 3
     b = 4
-    print(f'{a} + {b} = {demo_summator(model.parent, a, b)}')
+    print(f'{a} + {b} = {demo_summator(model.parent, a, b, bits_per_number=4)}')

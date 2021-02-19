@@ -29,12 +29,12 @@ def create_linear_initializer(input_size, dtype=tf.float32):
     return tf.truncated_normal_initializer(stddev=stddev, dtype=dtype)
 
 
-def save_session_as_tf_checkpoint(session, saver, current_stage):
+def save_session_as_tf_checkpoint(session, saver, current_stage, bits_per_number):
     model_dir = Path('./models') / f'{current_stage}'
     model_path = model_dir / 'my_model.ckpt'
     saver.save(session, str(model_path))
     logger.info(f'Saved the trained model at step {current_stage}.')
     freeze_graph(model_dir)
     logger.info(f'Froze the model at step {current_stage}.')
-    err = test_model(model_dir)
+    err = test_model(model_dir, bits_per_number=bits_per_number)
     logger.info(f'Tested frozen model at step {current_stage}, error: {err}.')

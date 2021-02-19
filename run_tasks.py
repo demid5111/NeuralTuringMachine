@@ -300,7 +300,6 @@ if __name__ == '__main__':
             logger.info('TRAIN_PARSABLE: {0},{1},{2},{3}'.format(i, curriculum_point, train_loss, avg_errors_per_seq))
 
         if i % args.steps_per_eval == 0:
-            print('In validation')
             target_task_error, target_task_loss, multi_task_error, multi_task_loss, curriculum_point_error, \
             curriculum_point_loss = eval_performance(sess, data_generator, args, model,
                                                      target_point, labels, outputs, inputs,
@@ -347,7 +346,7 @@ if __name__ == '__main__':
                 elif args.task == AssociativeRecallTask.name:
                     curriculum_point = min(target_point, curriculum_point + 1)
 
-            save_session_as_tf_checkpoint(sess, saver, str(i))
+            save_session_as_tf_checkpoint(sess, saver, str(i), bits_per_number=args.max_seq_len)
 
             logger.info('----EVAL----')
             logger.info('target task error/loss: {0},{1}'.format(target_task_error, target_task_loss))
@@ -390,7 +389,7 @@ if __name__ == '__main__':
 
     logger.info(f'Trained the model after {args.num_train_steps} steps.')
 
-    save_session_as_tf_checkpoint(sess, saver, 'final')
+    save_session_as_tf_checkpoint(sess, saver, 'final', bits_per_number=args.max_seq_len)
 
     inputs, outputs = analyze_inputs_outputs(model.outputs.graph)
     logger.info(f'Model inputs: {inputs}')
