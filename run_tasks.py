@@ -5,20 +5,12 @@ import sys
 
 import tensorflow as tf
 
+from freeze import analyze_inputs_outputs
 from generate_data import CopyTaskData, AssociativeRecallData, SumTaskData
-from utils import expand, learned_init
+from utils import expand, learned_init, save_session_as_tf_checkpoint, str2bool, logger
 from exp3S import Exp3S
 from evaluate import run_eval, eval_performance, eval_generalization
 import constants
-
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1")
 
 
 def create_argparser():
@@ -190,20 +182,6 @@ class BuildTModel(BuildModel):
         self.train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
 
-def analyze_inputs_outputs(graph):
-    ops = graph.get_operations()
-    outputs_set = set(ops)
-    inputs = []
-    for op in ops:
-        if len(op.inputs) == 0 and op.type != 'Const':
-            inputs.append(op)
-        else:
-            for input_tensor in op.inputs:
-                if input_tensor.op in outputs_set:
-                    outputs_set.remove(input_tensor.op)
-    return inputs, list(outputs_set)
-
-
 if __name__ == '__main__':
     args = create_argparser().parse_args()
 
@@ -227,6 +205,8 @@ if __name__ == '__main__':
         outputs_placeholder = tf.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
         model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
         initializer = tf.global_variables_initializer()
+
+    saver = tf.train.Saver(max_to_keep=1)
 
     # training
     convergence_on_target_task = None
@@ -367,9 +347,7 @@ if __name__ == '__main__':
                 elif args.task == AssociativeRecallTask.name:
                     curriculum_point = min(target_point, curriculum_point + 1)
 
-            saver = tf.train.Saver(max_to_keep=1)
-            saver.save(sess, os.path.join('./models', f'{i}', 'my_model.ckpt'))
-            logger.info(f'Saved the trained model at step {i}.')
+            save_session_as_tf_checkpoint(sess, saver, str(i))
 
             logger.info('----EVAL----')
             logger.info('target task error/loss: {0},{1}'.format(target_task_error, target_task_loss))
@@ -412,12 +390,8 @@ if __name__ == '__main__':
 
     logger.info(f'Trained the model after {args.num_train_steps} steps.')
 
-    saver = tf.train.Saver(max_to_keep=1)
-    saver.save(sess, os.path.join('./models', f'final', 'my_model.ckpt'))
-    logger.info(f'Saved the trained model.')
+    save_session_as_tf_checkpoint(sess, saver, 'final')
 
     inputs, outputs = analyze_inputs_outputs(model.outputs.graph)
     logger.info(f'Model inputs: {inputs}')
     logger.info(f'Model outputs: {outputs}')
-
-

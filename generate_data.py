@@ -73,7 +73,7 @@ class SumTaskData:
                                                      bits_per_vector_for_outputs)
 
             # TODO: should it be a full row of ones as it is in other tasks? Or as in
-            # binary arithmetic paper - just a flag?
+            # TODO: binary arithmetic paper - just a flag?
             eos = np.ones([batch_size, 1, bits_per_vector_for_inputs])
             output_inputs = np.zeros((batch_size, bits_per_number + 1, bits_per_vector_for_inputs))
 
@@ -153,7 +153,7 @@ class SumTaskData:
 
     @staticmethod
     def _from_binary_numpy_to_binary_str(binary_number: np.ndarray) -> str:
-        return ''.join([str(int(i)) for i in binary_number.tolist()])
+        return ''.join([str(round(i)) for i in binary_number.tolist()])
 
     @staticmethod
     def log_generated_sample(a, b, sum_res, is_verbose=False):
