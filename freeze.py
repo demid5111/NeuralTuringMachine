@@ -1,3 +1,5 @@
+import argparse
+import subprocess
 from pathlib import Path
 
 import tensorflow as tf
@@ -44,6 +46,22 @@ def freeze_graph(directory_path):
             f.write(frozen_graph_def.SerializeToString())
 
 
+def run_console_tool(tool_arguments):
+    python_executable = Path.cwd() / 'venv' / 'bin' / 'python'
+    options = [
+        str(python_executable), __file__,
+        *tool_arguments
+    ]
+    print('[SUBPROCESS] {}'.format(' '.join(options)))
+    return subprocess.run(options, capture_output=True)
+
+
 if __name__ == '__main__':
-    path = './trained_models/binary_sum_v1/'
-    freeze_graph(path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint_dir", default='./trained_models/binary_sum_v1/', type=str,
+                        help="Checkpoint model file to import")
+    args = parser.parse_args()
+
+    checkpoints_path = Path(args.checkpoint_dir)
+
+    freeze_graph(checkpoints_path)

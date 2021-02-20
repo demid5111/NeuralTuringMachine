@@ -211,6 +211,18 @@ if __name__ == '__main__':
         model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
         initializer = tf.global_variables_initializer()
 
+    saver = tf.train.Saver(max_to_keep=10)
+    sess = tf.Session()
+    if not args.continue_training_from_checkpoint:
+        print(f'Tensorflow initializing the model')
+        sess.run(initializer)
+    else:
+        latest_checkpoint_path = tf.train.latest_checkpoint(args.continue_training_from_checkpoint)
+        print(f'Tensorflow reading {latest_checkpoint_path} checkpoint')
+        saver.restore(sess, latest_checkpoint_path)
+        print(f'Tensorflow loaded {latest_checkpoint_path} checkpoint')
+    tf.get_default_graph().finalize()
+
     # training
     convergence_on_target_task = None
     convergence_on_multi_task = None
@@ -256,16 +268,6 @@ if __name__ == '__main__':
 
     if data_generator is None:
         sys.exit(f'Data generation rules for "{args.task}" are not specified')
-
-    saver = tf.train.Saver(max_to_keep=1)
-    sess = tf.Session()
-    if not args.continue_training_from_checkpoint:
-        sess.run(initializer)
-    else:
-        latest_checkpoint_path = tf.train.latest_checkpoint(args.continue_training_from_checkpoint)
-        print(f'Tensorflow reading {latest_checkpoint_path} checkpoint')
-        saver.restore(sess, latest_checkpoint_path)
-        print(f'Tensorflow loaded {latest_checkpoint_path} checkpoint')
 
     if args.verbose:
         pickle.dump({target_point: []}, open(constants.HEAD_LOG_FILE, "wb"))

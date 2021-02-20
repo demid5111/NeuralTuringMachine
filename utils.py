@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from infer import test_model
-from freeze import freeze_graph
+from freeze import freeze_graph, run_console_tool
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,7 +34,13 @@ def save_session_as_tf_checkpoint(session, saver, current_stage, bits_per_number
     model_path = model_dir / 'my_model.ckpt'
     saver.save(session, str(model_path))
     logger.info(f'Saved the trained model at step {current_stage}.')
-    freeze_graph(model_dir)
+    # freeze_graph(model_dir)
+    # err = test_model(model_dir, bits_per_number=bits_per_number)
+    # logger.info(f'Tested frozen model at step {current_stage}, error: {err}.')
+    tool_arguments = [
+        '--checkpoint_dir',
+        str(model_dir)
+    ]
+    res = run_console_tool(tool_arguments)
+    logger.info(res)
     logger.info(f'Froze the model at step {current_stage}.')
-    err = test_model(model_dir, bits_per_number=bits_per_number)
-    logger.info(f'Tested frozen model at step {current_stage}, error: {err}.')
