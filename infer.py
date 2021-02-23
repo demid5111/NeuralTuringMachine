@@ -98,9 +98,9 @@ if __name__ == '__main__':
 
     model = Path(args.frozen_model_filename)
 
-    overall_err = test_model(model.parent, bits_per_number=4)
+    overall_err = test_model(model.parent, bits_per_number=10)
     print(f'Overall quality of model. Error: {overall_err}')
 
-    a = 3
-    b = 4
-    print(f'{a} + {b} = {demo_summator(model.parent, a, b, bits_per_number=4)}')
+    a = 300
+    b = 400
+    print(f'{a} + {b} = {demo_summator(model.parent, a, b, bits_per_number=10)}')
