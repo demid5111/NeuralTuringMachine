@@ -26,7 +26,7 @@
 
 # Copy the trained model:
 #
-# scp -r root@188.166.169.120:~/projects/tf1-approved-NeuralTuringMachine/models/115000 Downloads/model_tf2
+# scp -r root@188.166.169.120:~/projects/tf1-approved-NeuralTuringMachine/models/115000 ~/Downloads/model_tf2
 
 mkdir models
 python run_tasks.py --experiment_name experiment --verbose no \
