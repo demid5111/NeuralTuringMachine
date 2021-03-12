@@ -5,7 +5,7 @@
 Date: 2021-02-17
 Task: sum (binary numbers)
 
-## CLI command
+## Training command
 
 ```bash
 python3 run_tasks.py --experiment_name experiment --verbose no \
