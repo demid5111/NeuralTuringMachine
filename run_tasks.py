@@ -6,9 +6,11 @@ import sys
 import tensorflow as tf
 
 from freeze import analyze_inputs_outputs
-from generate_data import CopyTaskData, AssociativeRecallData, SumTaskData
-from tasks.binary_average_sum.task import AverageSumTask
-from tasks.binary_sum.task import SumTask
+from generate_data import CopyTaskData, AssociativeRecallData
+from tasks.arithmetics.binary_average_sum.generator import AverageSumTaskData
+from tasks.arithmetics.binary_average_sum.task import AverageSumTask
+from tasks.arithmetics.binary_sum.generator import SumTaskData
+from tasks.arithmetics.binary_sum.task import SumTask
 from utils import expand, learned_init, save_session_as_tf_checkpoint, str2bool, logger
 from exp3S import Exp3S
 from evaluate import run_eval, eval_performance, eval_generalization
@@ -67,7 +69,7 @@ class UnknownTaskError(Exception):
 
 class CopyTask:
     name = 'copy'
-    
+
     @staticmethod
     def offset(max_len_placeholder):
         return max_len_placeholder + 1
@@ -75,7 +77,7 @@ class CopyTask:
 
 class AssociativeRecallTask:
     name = 'associative_recall'
-    
+
     @staticmethod
     def offset(max_len_placeholder):
         return 3 * (max_len_placeholder + 1) + 2
@@ -146,6 +148,8 @@ class BuildModel(object):
         try:
             where_output_begins = task_to_offset[args.task]()
             self.output_logits = output_sequence[:, where_output_begins:, :]
+            print(f'!!!!!!!!! where_output_begins: {where_output_begins}')
+            # self.output_logits = output_sequence[:, :, :]
         except KeyError:
             raise UnknownTaskError(f'No information on output slicing of model for "{args.task}" task')
 
@@ -167,7 +171,7 @@ class BuildTModel(BuildModel):
     def __init__(self, max_seq_len, inputs, outputs):
         super(BuildTModel, self).__init__(max_seq_len, inputs)
 
-        if args.task in (CopyTask.name, AssociativeRecallTask.name, SumTask.name, AverageSumTask.name):
+        if is_current_task_supported(args.task):
             cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=outputs, logits=self.output_logits)
             self.loss = tf.reduce_sum(cross_entropy) / args.batch_size
         else:
@@ -183,6 +187,10 @@ class BuildTModel(BuildModel):
         self.train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
 
+def is_current_task_supported(task):
+    return task in (CopyTask.name, AssociativeRecallTask.name, SumTask.name, AverageSumTask.name)
+
+
 if __name__ == '__main__':
     args = create_argparser().parse_args()
 
@@ -192,7 +200,6 @@ if __name__ == '__main__':
             from ntm import NTMCell
         else:
             print('Using contrib implementation')
-            import tensorflow.contrib.rnn.python.ops.rnn_cell as tf_nn
             from tensorflow.contrib.rnn.python.ops.rnn_cell import NTMCell
 
     if args.verbose:
@@ -261,6 +268,13 @@ if __name__ == '__main__':
         curriculum_point = None  # 1 if args.curriculum not in ('prediction_gain', 'none') else target_point
         progress_error = 1.0
         convergence_error = 0.1
+    elif args.task == AverageSumTask.name:
+        data_generator = AverageSumTaskData()
+        target_point = args.max_seq_len
+        # TODO: investigate what curriculum point is
+        curriculum_point = None  # 1 if args.curriculum not in ('prediction_gain', 'none') else target_point
+        progress_error = 1.0
+        convergence_error = 0.1
     else:
         raise UnknownTaskError(f'No information on the way to generate data for {args.task} task')
 
@@ -271,14 +285,17 @@ if __name__ == '__main__':
         pickle.dump({target_point: []}, open(constants.HEAD_LOG_FILE, "wb"))
         pickle.dump({}, open(constants.GENERALIZATION_HEAD_LOG_FILE, "wb"))
 
-    for i in range(args.continue_training_from_train_step+1, args.num_train_steps):
+    for i in range(args.continue_training_from_train_step + 1, args.num_train_steps):
         if args.curriculum == 'prediction_gain':
             if args.task == CopyTask.name:
                 task = 1 + exp3s.draw_task()
             elif args.task == AssociativeRecallTask.name:
                 task = 2 + exp3s.draw_task()
 
-        seq_len, inputs, labels = data_generator.generate_batches(
+        if not is_current_task_supported(args.task):
+            raise UnknownTaskError(f'No information on how to properly initiate data generation for {args.task} task')
+
+        generator_args = dict(
             num_batches=1,
             batch_size=args.batch_size,
             bits_per_vector=args.num_bits_per_vector,
@@ -286,7 +303,12 @@ if __name__ == '__main__':
             max_seq_len=args.max_seq_len,
             curriculum=args.curriculum,
             pad_to_max_seq_len=args.pad_to_max_seq_len
-        )[0]
+        )
+
+        if args.task == AverageSumTask.name:
+            generator_args['numbers_quantity'] = args.num_experts
+
+        seq_len, inputs, labels = data_generator.generate_batches(**generator_args)[0]
 
         train_loss, _, outputs = sess.run([model.loss, model.train_op, model.outputs],
                                           feed_dict={
@@ -310,13 +332,15 @@ if __name__ == '__main__':
             logger.info('TRAIN_PARSABLE: {0},{1},{2},{3}'.format(i, curriculum_point, train_loss, avg_errors_per_seq))
 
         if i % args.steps_per_eval == 0:
+            should_skip_multi_task = args.task in (SumTask.name, AverageSumTask.name)
+
             target_task_error, target_task_loss, multi_task_error, multi_task_loss, curriculum_point_error, \
             curriculum_point_loss = eval_performance(sess, data_generator, args, model,
                                                      target_point, labels, outputs, inputs,
                                                      inputs_placeholder, outputs_placeholder, max_seq_len_placeholder,
                                                      curriculum_point if args.curriculum != 'prediction_gain' else None,
                                                      store_heat_maps=args.verbose,
-                                                     skip_multi_task=args.task == SumTask.name)
+                                                     skip_multi_task=should_skip_multi_task)
 
             if (convergence_on_multi_task is None and
                     multi_task_error is not None and  # condition inserted due to SumTask

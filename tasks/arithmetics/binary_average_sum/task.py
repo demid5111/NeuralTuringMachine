@@ -12,6 +12,8 @@ class AverageSumTask:
         <second number, e.g [0 1 0 0]>
         <end number marker, e.g. 1>
         <third number, e.g [0 0 1 0]>
+        <end number marker, e.g. 1>
+        <result number, e.g. [1 1 1 0]>
         <end marker, e.g. 0>
 
         :param max_len_placeholder: number of bits required for a single number representation
