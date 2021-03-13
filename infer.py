@@ -81,14 +81,17 @@ def test_model(directory_path: Path, bits_per_number, num_experts):
     return error
 
 
-def demo_summator(directory_path: Path, a: int, b: int, bits_per_number, num_experts):
+def demo_summator(directory_path: Path, numbers, bits_per_number, num_experts):
     (seq_len, inputs, labels), data_generator = _generate_data(bits_per_number, num_experts)
 
-    a_numpy = BinaryUtils._from_decimal_to_little_endian_binary_numpy(a, bits_per_number=bits_per_number)
-    b_numpy = BinaryUtils._from_decimal_to_little_endian_binary_numpy(b, bits_per_number=bits_per_number)
+    numbers_nd = [BinaryUtils._from_decimal_to_little_endian_binary_numpy(a, bits_per_number=bits_per_number) for a in
+                  numbers]
 
-    inputs[0][:bits_per_number, 0] = a_numpy
-    inputs[0][bits_per_number + 1:bits_per_number * 2 + 1, 0] = b_numpy
+    for num_index, number in enumerate(numbers_nd):
+        number_starts_at = num_index * (bits_per_number + 1)
+        number_finishes_at = number_starts_at + bits_per_number
+
+        inputs[0][number_starts_at:number_finishes_at, 0] = number
 
     outputs = infer_model(directory_path, inputs=inputs, seq_len=seq_len)
     return BinaryUtils._from_binary_numpy_to_decimal(outputs[0][:-1, 0])
@@ -111,7 +114,14 @@ if __name__ == '__main__':
     overall_err = test_model(model.parent, bits_per_number=args.bits_per_number, num_experts=args.num_experts)
     print(f'Overall quality of model. Error: {overall_err}')
 
-    a = 300
-    b = 400
-    demo_result = demo_summator(model.parent, a, b, bits_per_number=args.bits_per_number, num_experts=args.num_experts)
-    print(f'{a} + {b} = {demo_result}')
+    if args.num_experts is None:
+        numbers = (3, 4)
+    else:
+        numbers = tuple([i for i in range(1, args.num_experts + 1)])
+
+    if args.bits_per_number >= 10:
+        numbers = tuple([i * 100 for i in numbers])
+
+    demo_result = demo_summator(model.parent, numbers=numbers, bits_per_number=args.bits_per_number,
+                                num_experts=args.num_experts)
+    print(f"({' + '.join([str(i) for i in numbers])}) / {args.num_experts} ~= {demo_result}")
