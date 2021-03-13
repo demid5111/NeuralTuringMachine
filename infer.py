@@ -124,4 +124,10 @@ if __name__ == '__main__':
 
     demo_result = demo_summator(model.parent, numbers=numbers, bits_per_number=args.bits_per_number,
                                 num_experts=args.num_experts)
-    print(f"({' + '.join([str(i) for i in numbers])}) / {args.num_experts} ~= {demo_result}")
+    summands_str = ' + '.join([str(i) for i in numbers])
+
+    if args.num_experts is None:
+        to_print_str = f"{summands_str} ~= {demo_result}"
+    else:
+        to_print_str = f"({summands_str}) / {args.num_experts} ~= {demo_result}"
+    print(to_print_str)
