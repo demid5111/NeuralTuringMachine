@@ -148,8 +148,6 @@ class BuildModel(object):
         try:
             where_output_begins = task_to_offset[args.task]()
             self.output_logits = output_sequence[:, where_output_begins:, :]
-            print(f'!!!!!!!!! where_output_begins: {where_output_begins}')
-            # self.output_logits = output_sequence[:, :, :]
         except KeyError:
             raise UnknownTaskError(f'No information on output slicing of model for "{args.task}" task')
 
