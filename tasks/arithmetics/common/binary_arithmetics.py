@@ -59,7 +59,7 @@ class BinaryUtils:
         return sum_array
 
     @staticmethod
-    def log_generated_sum_sample(a, b, sum_res, is_verbose=False):
+    def log_generated_sum_sample(a, b, sum_res, is_verbose=True):
         dec_a = BinaryUtils._from_binary_numpy_to_decimal(a)
         dec_b = BinaryUtils._from_binary_numpy_to_decimal(b)
         dec_sum = BinaryUtils._from_binary_numpy_to_decimal(sum_res)

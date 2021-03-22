@@ -10,7 +10,9 @@ set -x
 sudo apt-get update
 sudo apt-get upgrade
 sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt-get install python3.7
-sudo apt-get install python3-pip
-python3 -m pip install virtualenv
-python3 -m virtualenv venv
+sudo apt-get install -y python3.7
+sudo apt-get install -y python3-pip
+python3.7 -m pip install virtualenv
+python3.7 -m virtualenv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
