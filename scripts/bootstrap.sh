@@ -7,9 +7,9 @@ set -x
 
 # Preparing fresh machine for the first usage:
 
-sudo apt-get update
-sudo apt-get upgrade
-sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get -y update
+sudo apt-get -y upgrade
+sudo add-apt-repository -y ppa:deadsnakes/ppa
 sudo apt-get install -y python3.7
 sudo apt-get install -y python3-pip
 python3.7 -m pip install virtualenv
