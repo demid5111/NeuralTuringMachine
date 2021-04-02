@@ -7,12 +7,12 @@ set -x
 
 # Running the training:
 
-pushd ~/projects/tf1-approved-NeuralTuringMachine/
+pushd ~/NeuralTuringMachine/
 source venv/bin/activate
 rm -rf models/*
 rm -rf out.log
 popd
 
-pushd ~/projects/tf1-approved-NeuralTuringMachine/
+pushd ~/NeuralTuringMachine/
 nohup bash scripts/run.sh > out.log &
 popd
