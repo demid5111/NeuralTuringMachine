@@ -60,6 +60,10 @@ def create_argparser():
 
     parser.add_argument('--num_experts', type=int, required=False,
                         help='Optional. Specifies number of assessments (numbers) to aggregate: finding average')
+
+    parser.add_argument('--device', type=str, required=False, choices=('cpu', 'gpu'), default='cpu',
+                        help='Optional. Specifies number of assessments (numbers) to aggregate: finding average')
+
     return parser
 
 
@@ -205,15 +209,20 @@ if __name__ == '__main__':
         constants.HEAD_LOG_FILE = 'head_logs/{0}.p'.format(args.experiment_name)
         constants.GENERALIZATION_HEAD_LOG_FILE = 'head_logs/generalization_{0}.p'.format(args.experiment_name)
 
-    with tf.variable_scope('root'):
-        max_seq_len_placeholder = tf.placeholder(tf.int32)
-        inputs_placeholder = tf.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector + 1))
-        outputs_placeholder = tf.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
-        model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
-        initializer = tf.global_variables_initializer()
+    if args.device == "gpu":
+        device_name = "/gpu:0"
+    else:
+        device_name = "/cpu:0"
+    with tf.device(device_name):
+        with tf.compat.v1.variable_scope('root'):
+            max_seq_len_placeholder = tf.compat.v1.placeholder(tf.int32)
+            inputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector + 1))
+            outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
+            model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
+            initializer = tf.global_variables_initializer()
 
     saver = tf.train.Saver(max_to_keep=10)
-    sess = tf.Session()
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     if not args.continue_training_from_checkpoint:
         print(f'Tensorflow initializing the model')
         sess.run(initializer)

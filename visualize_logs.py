@@ -43,7 +43,7 @@ def create_chart(series, ticks, granularity=1000, type='error', bits_per_number=
     plt.xlabel('training steps', **font_settings)
     plt.xticks(new_ticks, **font_settings)
     plt.yticks(**font_settings)
-    plt.title(f'Binary sum task of two {bits_per_number}-bit numbers, {chart_title}')
+    plt.title(f'MTA operator task of three {bits_per_number}-bit numbers, {chart_title}')
     plt.legend()
     return plt
 
