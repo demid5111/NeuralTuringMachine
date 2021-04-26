@@ -182,7 +182,7 @@ class BuildTModel(BuildModel):
         if args.optimizer == 'RMSProp':
             optimizer = tf.train.RMSPropOptimizer(args.learning_rate, momentum=0.9, decay=0.9)
         elif args.optimizer == 'Adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
+            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
 
         trainable_variables = tf.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, trainable_variables), args.max_grad_norm)
