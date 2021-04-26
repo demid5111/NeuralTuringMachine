@@ -43,13 +43,13 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         prev_read_vector_list = prev_state.read_vector_list
 
         controller_input = tf.concat([x] + prev_read_vector_list, axis=1)
-        with tf.variable_scope('controller', reuse=self.reuse):
+        with tf.compat.v1.variable_scope('controller', reuse=self.reuse):
             controller_output, controller_state = self.controller(controller_input, prev_state.controller_state)
 
         num_parameters_per_head = self.memory_vector_dim + 1 + 1 + (self.shift_range * 2 + 1) + 1
         num_heads = self.read_head_num + self.write_head_num
         total_parameter_num = num_parameters_per_head * num_heads + self.memory_vector_dim * 2 * self.write_head_num
-        with tf.variable_scope("o2p", reuse=(self.step > 0) or self.reuse):
+        with tf.compat.v1.variable_scope("o2p", reuse=(self.step > 0) or self.reuse):
             parameters = tf.compat.v1.layers.dense(
                 controller_output, total_parameter_num, activation=None,
                 kernel_initializer=self.o2p_initializer)
@@ -68,7 +68,7 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
                 head_parameter[:, self.memory_vector_dim + 2:self.memory_vector_dim + 2 + (self.shift_range * 2 + 1)]
             )
             gamma = tf.nn.softplus(head_parameter[:, -1]) + 1
-            with tf.variable_scope('addressing_head_%d' % i):
+            with tf.compat.v1.variable_scope('addressing_head_%d' % i):
                 w = self.addressing(k, beta, g, s, gamma, prev_M, prev_w_list[i])
             w_list.append(w)
 
@@ -94,7 +94,7 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
             output_dim = x.get_shape()[1]
         else:
             output_dim = self.output_dim
-        with tf.variable_scope("o2o", reuse=(self.step > 0) or self.reuse):
+        with tf.compat.v1.variable_scope("o2o", reuse=(self.step > 0) or self.reuse):
             NTM_output = tf.compat.v1.layers.dense(
                 tf.concat([controller_output] + read_vector_list, axis=1), output_dim, activation=None,
                 kernel_initializer=self.o2o_initializer)
