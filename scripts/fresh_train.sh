@@ -4,6 +4,8 @@ set -x
 # Watching the training:
 #
 # tail -f ~/projects/tf1-approved-NeuralTuringMachine/out.log
+# GPU load
+# nvidia-smi --query-gpu=utilization.gpu --format=csv --loop=1
 
 # Running the training:
 

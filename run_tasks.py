@@ -213,13 +213,13 @@ if __name__ == '__main__':
         device_name = "/gpu:0"
     else:
         device_name = "/cpu:0"
-    # with tf.device(device_name):
-    with tf.compat.v1.variable_scope('root'):
-        max_seq_len_placeholder = tf.compat.v1.placeholder(tf.int32)
-        inputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector + 1))
-        outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
-        model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
-        initializer = tf.global_variables_initializer()
+    with tf.device(device_name):
+        with tf.compat.v1.variable_scope('root'):
+            max_seq_len_placeholder = tf.compat.v1.placeholder(tf.int32)
+            inputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector + 1))
+            outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
+            model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
+            initializer = tf.global_variables_initializer()
 
     saver = tf.train.Saver(max_to_keep=10)
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))

@@ -47,7 +47,7 @@ def freeze_graph(directory_path):
 
 
 def run_console_tool(tool_arguments):
-    python_executable = Path.cwd() / 'venv' / 'bin' / 'python'
+    python_executable = 'python3'  # Path.cwd() / 'venv' / 'bin' / 'python'
     options = [
         str(python_executable), __file__,
         *tool_arguments
