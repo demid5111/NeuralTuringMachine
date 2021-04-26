@@ -5,15 +5,13 @@
 # the outputs of the controller heads are clipped to an absolute value
 # we find that our modification result in more reliable training (we never observe gradients going to NaN) and faster convergence
 
-import numpy as np
 import tensorflow as tf
-from tensorflow.python.util import nest
 import collections
 from utils import expand, learned_init, create_linear_initializer
 
 NTMControllerState = collections.namedtuple('NTMControllerState', ('controller_state', 'read_vector_list', 'w_list', 'M'))
 
-class NTMCell(tf.contrib.rnn.RNNCell):
+class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
     def __init__(self, controller_layers, controller_units, memory_size, memory_vector_dim, read_head_num, write_head_num,
                  addressing_mode='content_and_location', shift_range=1, reuse=False, output_dim=None, clip_value=20,
                  init_mode='constant'):

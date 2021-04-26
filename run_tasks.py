@@ -126,9 +126,9 @@ class BuildModel(object):
                 )
             else:
                 def single_cell(num_units):
-                    return tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1.0)
+                    return tf.compat.v1.nn.rnn_cell.BasicLSTMCell(num_units, forget_bias=1.0)
 
-                controller = tf.contrib.rnn.MultiRNNCell(
+                controller = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
                     [single_cell(args.num_units) for _ in range(args.num_layers)])
 
                 cell = NTMCell(controller, args.num_memory_locations, args.memory_size,
@@ -136,7 +136,7 @@ class BuildModel(object):
                                output_dim=args.num_bits_per_vector,
                                clip_value=args.clip_value)
 
-        output_sequence, _ = tf.nn.dynamic_rnn(
+        output_sequence, _ = tf.compat.v1.nn.dynamic_rnn(
             cell=cell,
             inputs=self.inputs,
             time_major=False,
