@@ -22,8 +22,7 @@ def expand(x, dim, N):
 
 
 def learned_init(units):
-    return tf.squeeze(tf.contrib.layers.fully_connected(tf.ones([1, 1]), units,
-        activation_fn=None, biases_initializer=None))
+    return tf.squeeze(tf.compat.v1.layers.dense(tf.ones([1, 1]), units))
 
 
 def create_linear_initializer(input_size, dtype=tf.float32):
