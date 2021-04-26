@@ -209,6 +209,7 @@ if __name__ == '__main__':
         constants.HEAD_LOG_FILE = 'head_logs/{0}.p'.format(args.experiment_name)
         constants.GENERALIZATION_HEAD_LOG_FILE = 'head_logs/generalization_{0}.p'.format(args.experiment_name)
 
+    tf.compat.v1.disable_v2_behavior()
     if args.device == "gpu":
         device_name = "/gpu:0"
     else:

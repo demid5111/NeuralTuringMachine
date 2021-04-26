@@ -26,9 +26,9 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         self.clip_value = clip_value
 
         def single_cell(num_units):
-            return tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1.0)
+            return tf.compat.v1.nn.rnn_cell.BasicLSTMCell(num_units, forget_bias=1.0)
 
-        self.controller = tf.contrib.rnn.MultiRNNCell([single_cell(self.controller_units) for _ in range(self.controller_layers)])
+        self.controller = tf.compat.v1.nn.rnn_cell.MultiRNNCell([single_cell(self.controller_units) for _ in range(self.controller_layers)])
 
         self.init_mode = init_mode
 
@@ -50,9 +50,9 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         num_heads = self.read_head_num + self.write_head_num
         total_parameter_num = num_parameters_per_head * num_heads + self.memory_vector_dim * 2 * self.write_head_num
         with tf.variable_scope("o2p", reuse=(self.step > 0) or self.reuse):
-            parameters = tf.contrib.layers.fully_connected(
-                controller_output, total_parameter_num, activation_fn=None,
-                weights_initializer=self.o2p_initializer)
+            parameters = tf.compat.v1.layers.dense(
+                controller_output, total_parameter_num, activation=None,
+                kernel_initializer=self.o2p_initializer)
             parameters = tf.clip_by_value(parameters, -self.clip_value, self.clip_value)
         head_parameter_list = tf.split(parameters[:, :num_parameters_per_head * num_heads], num_heads, axis=1)
         erase_add_list = tf.split(parameters[:, num_parameters_per_head * num_heads:], 2 * self.write_head_num, axis=1)
@@ -95,9 +95,9 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         else:
             output_dim = self.output_dim
         with tf.variable_scope("o2o", reuse=(self.step > 0) or self.reuse):
-            NTM_output = tf.contrib.layers.fully_connected(
-                tf.concat([controller_output] + read_vector_list, axis=1), output_dim, activation_fn=None,
-                weights_initializer=self.o2o_initializer)
+            NTM_output = tf.compat.v1.layers.dense(
+                tf.concat([controller_output] + read_vector_list, axis=1), output_dim, activation=None,
+                kernel_initializer=self.o2o_initializer)
             NTM_output = tf.clip_by_value(NTM_output, -self.clip_value, self.clip_value)
 
         self.step += 1

@@ -10,7 +10,7 @@ set -x
 # Running the training:
 
 pushd ~/NeuralTuringMachine/
-source venv/bin/activate
+#source venv/bin/activate
 rm -rf models/*
 rm -rf out.log
 popd
