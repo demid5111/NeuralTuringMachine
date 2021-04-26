@@ -184,7 +184,7 @@ class BuildTModel(BuildModel):
         elif args.optimizer == 'Adam':
             optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
 
-        trainable_variables = tf.trainable_variables()
+        trainable_variables = tf.compat.v1.trainable_variables()
         grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, trainable_variables), args.max_grad_norm)
         self.train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
