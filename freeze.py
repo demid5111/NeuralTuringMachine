@@ -27,20 +27,24 @@ def freeze_graph(directory_path):
 
     output_node_names = ['root/Sigmoid']  # Output nodes
 
-    with tf.compat.v1.Session() as sess:
-        # Restore the graph
-        saver = tf.compat.v1.train.import_meta_graph(str(meta_path))
+    tf.compat.v1.disable_v2_behavior()
 
-        # Load weights
-        latest_checkpoint_path = tf.compat.v1.train.latest_checkpoint(str(root_path))
-        print(f'Tensorflow reading {latest_checkpoint_path} before freezing')
-        saver.restore(sess, latest_checkpoint_path)
+    device_name = "/cpu:0"
+    with tf.device(device_name):
+        with tf.compat.v1.Session() as sess:
+            # Restore the graph
+            saver = tf.compat.v1.train.import_meta_graph(str(meta_path))
 
-        # Freeze the graph
-        frozen_graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
-            sess,
-            sess.graph_def,
-            output_node_names)
+            # Load weights
+            latest_checkpoint_path = tf.compat.v1.train.latest_checkpoint(str(root_path))
+            print(f'Tensorflow reading {latest_checkpoint_path} before freezing')
+            saver.restore(sess, latest_checkpoint_path)
+
+            # Freeze the graph
+            frozen_graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
+                sess,
+                sess.graph_def,
+                output_node_names)
 
         # Save the frozen graph
         with open(frozen_path, 'wb') as f:
