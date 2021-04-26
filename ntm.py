@@ -145,7 +145,7 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         return w
 
     def zero_state(self, batch_size, dtype):
-        with tf.variable_scope('init', reuse=self.reuse):
+        with tf.compat.v1.variable_scope('init', reuse=self.reuse):
             read_vector_list = [expand(tf.tanh(learned_init(self.memory_vector_dim)), dim=0, N=batch_size)
                 for i in range(self.read_head_num)]
 
