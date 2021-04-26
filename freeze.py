@@ -33,7 +33,7 @@ def freeze_graph(directory_path):
     with tf.device(device_name):
         with tf.compat.v1.Session() as sess:
             # Restore the graph
-            saver = tf.compat.v1.train.import_meta_graph(str(meta_path))
+            saver = tf.compat.v1.train.import_meta_graph(str(meta_path), clear_devices=True)
 
             # Load weights
             latest_checkpoint_path = tf.compat.v1.train.latest_checkpoint(str(root_path))
