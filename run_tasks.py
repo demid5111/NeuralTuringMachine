@@ -222,8 +222,9 @@ if __name__ == '__main__':
             model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
             initializer = tf.compat.v1.global_variables_initializer()
 
-    saver = tf.train.Saver(max_to_keep=10)
-    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+    saver = tf.compat.v1.train.Saver(max_to_keep=10)
+    tf.debugging.set_log_device_placement(True)
+    sess = tf.compat.v1.Session()
     if not args.continue_training_from_checkpoint:
         print(f'Tensorflow initializing the model')
         sess.run(initializer)
@@ -232,7 +233,7 @@ if __name__ == '__main__':
         print(f'Tensorflow reading {latest_checkpoint_path} checkpoint')
         saver.restore(sess, latest_checkpoint_path)
         print(f'Tensorflow loaded {latest_checkpoint_path} checkpoint')
-    tf.get_default_graph().finalize()
+    tf.compat.v1.get_default_graph().finalize()
 
     # training
     convergence_on_target_task = None

@@ -26,17 +26,17 @@ def freeze_graph(directory_path):
 
     output_node_names = ['root/Sigmoid']  # Output nodes
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         # Restore the graph
-        saver = tf.train.import_meta_graph(str(meta_path))
+        saver = tf.compat.v1.train.import_meta_graph(str(meta_path))
 
         # Load weights
-        latest_checkpoint_path = tf.train.latest_checkpoint(str(root_path))
+        latest_checkpoint_path = tf.compat.v1.train.latest_checkpoint(str(root_path))
         print(f'Tensorflow reading {latest_checkpoint_path} before freezing')
         saver.restore(sess, latest_checkpoint_path)
 
         # Freeze the graph
-        frozen_graph_def = tf.graph_util.convert_variables_to_constants(
+        frozen_graph_def = tf.compat.v1.graph_util.convert_variables_to_constants(
             sess,
             sess.graph_def,
             output_node_names)
