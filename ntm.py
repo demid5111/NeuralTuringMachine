@@ -77,7 +77,7 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         read_w_list = w_list[:self.read_head_num]
         read_vector_list = []
         for i in range(self.read_head_num):
-            read_vector = tf.reduce_sum(tf.expand_dims(read_w_list[i], dim=2) * prev_M, axis=1)
+            read_vector = tf.reduce_sum(tf.expand_dims(read_w_list[i], axis=2) * prev_M, axis=1)
             read_vector_list.append(read_vector)
 
         # Writing (Sec 3.2)
