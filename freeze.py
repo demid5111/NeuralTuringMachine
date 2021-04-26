@@ -1,3 +1,4 @@
+import sys
 import argparse
 import subprocess
 from pathlib import Path
@@ -53,7 +54,10 @@ def run_console_tool(tool_arguments):
         *tool_arguments
     ]
     print('[SUBPROCESS] {}'.format(' '.join(options)))
-    return subprocess.run(options, capture_output=True)
+    if sys.version_info.major <= 6:
+        return subprocess.run(options)
+    else:
+        return subprocess.run(options, capture_output=True)
 
 
 if __name__ == '__main__':
