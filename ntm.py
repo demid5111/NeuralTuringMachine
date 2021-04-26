@@ -112,15 +112,15 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
 
         k = tf.expand_dims(k, axis=2)
         inner_product = tf.matmul(prev_M, k)
-        k_norm = tf.sqrt(tf.reduce_sum(tf.square(k), axis=1, keep_dims=True))
-        M_norm = tf.sqrt(tf.reduce_sum(tf.square(prev_M), axis=2, keep_dims=True))
+        k_norm = tf.sqrt(tf.reduce_sum(tf.square(k), axis=1, keepdims=True))
+        M_norm = tf.sqrt(tf.reduce_sum(tf.square(prev_M), axis=2, keepdims=True))
         norm_product = M_norm * k_norm
         K = tf.squeeze(inner_product / (norm_product + 1e-8))                   # eq (6)
 
         # Calculating w^c
 
         K_amplified = tf.exp(tf.expand_dims(beta, axis=1) * K)
-        w_c = K_amplified / tf.reduce_sum(K_amplified, axis=1, keep_dims=True)  # eq (5)
+        w_c = K_amplified / tf.reduce_sum(K_amplified, axis=1, keepdims=True)  # eq (5)
 
         if self.addressing_mode == 'content':                                   # Only focus on content
             return w_c
@@ -140,7 +140,7 @@ class NTMCell(tf.compat.v1.nn.rnn_cell.RNNCell):
         )
         w_ = tf.reduce_sum(tf.expand_dims(w_g, axis=1) * s_matrix, axis=2)      # eq (8)
         w_sharpen = tf.pow(w_, tf.expand_dims(gamma, axis=1))
-        w = w_sharpen / tf.reduce_sum(w_sharpen, axis=1, keep_dims=True)        # eq (9)
+        w = w_sharpen / tf.reduce_sum(w_sharpen, axis=1, keepdims=True)        # eq (9)
 
         return w
 
