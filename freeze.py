@@ -52,9 +52,6 @@ def freeze_graph(directory_path):
 
 
 def run_console_tool(tool_arguments):
-    # if sys.version_info.major <= 6:
-    #     python_executable = 'python3'
-    # else:
     python_executable = Path.cwd() / 'venv' / 'bin' / 'python'
     options = [
         str(python_executable), __file__,

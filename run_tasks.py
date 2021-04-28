@@ -73,7 +73,7 @@ class UnknownTaskError(Exception):
 
 class CopyTask:
     name = 'copy'
-
+    
     @staticmethod
     def offset(max_len_placeholder):
         return max_len_placeholder + 1
@@ -81,7 +81,7 @@ class CopyTask:
 
 class AssociativeRecallTask:
     name = 'associative_recall'
-
+    
     @staticmethod
     def offset(max_len_placeholder):
         return 3 * (max_len_placeholder + 1) + 2
@@ -202,6 +202,7 @@ if __name__ == '__main__':
             from ntm import NTMCell
         else:
             print('Using contrib implementation')
+            import tensorflow.contrib.rnn.python.ops.rnn_cell as tf_nn
             from tensorflow.contrib.rnn.python.ops.rnn_cell import NTMCell
 
     if args.verbose:
@@ -221,10 +222,23 @@ if __name__ == '__main__':
             outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
             model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
             initializer = tf.compat.v1.global_variables_initializer()
+    if args.device == "gpu":
+        device_name = "/gpu:0"
+    else:
+        device_name = "/cpu:0"
+    with tf.device(device_name):
+        with tf.compat.v1.variable_scope('root'):
+            max_seq_len_placeholder = tf.compat.v1.placeholder(tf.int32)
+            inputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector + 1))
+            outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
+            model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
+            initializer = tf.global_variables_initializer()
 
     saver = tf.compat.v1.train.Saver(max_to_keep=10)
     tf.debugging.set_log_device_placement(True)
     sess = tf.compat.v1.Session()
+    saver = tf.train.Saver(max_to_keep=10)
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     if not args.continue_training_from_checkpoint:
         print(f'Tensorflow initializing the model')
         sess.run(initializer)
