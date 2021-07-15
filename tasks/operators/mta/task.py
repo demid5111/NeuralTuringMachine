@@ -1,6 +1,10 @@
 class MTATask:
     name = 'mta'
 
+    class MTAEncodingType:
+        full='full'
+        compact='compact'
+
     @staticmethod
     def offset(max_len_placeholder, numbers_count: int, weight_precision: int, alpha_precision: int):
         """
