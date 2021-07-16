@@ -207,7 +207,7 @@ def generate_batches(num_batches, batch_size, bits_per_vector, numbers_quantity,
     else:
         raise NotImplemented(f'Encoding scheme <{mta_encoding}> is not currently supported')
 
-    logger.info(f'Bits per number in dataset entry: {bits_per_number}')
+    # logger.info(f'Bits per number in dataset entry: {bits_per_number}')
 
     batches = []
     for i in range(num_batches):
